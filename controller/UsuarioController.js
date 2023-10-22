@@ -7,15 +7,22 @@ module.exports.listarUsuarios = async function (req, res) {
 };
 
 module.exports.buscarPorEmail = async function(req,res){
-  console.log(await client.ping());
-  const usuario = await Usuario.findByPk(req.params.email);
+  const {email} = req.params;
 
-  if(usuario){
-    res.status(200).send(usuario);
-  }else{
-    res.status(404).send('Usuário não encontrado');
+  const emailInCache = await client.get(email)
+  
+  if (emailInCache) {
+    return res.status(200).send(cache)
   }
 
+  const usuario = await Usuario.findByPk(email);
+
+  if(!usuario){
+    return res.status(404).send('Usuário não encontrado');
+  }
+
+  await client.set(email, JSON.stringify(usuario.dataValues));
+  res.status(200).send(usuario.dataValues)
 };
 
 module.exports.salvarUsuario = async function (req, res){
